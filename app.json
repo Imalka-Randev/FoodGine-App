@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "FoodGine",
-    "slug": "FoodGine",
+    "name": "Food Genie",
+    "slug": "food-genie",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

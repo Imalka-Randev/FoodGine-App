@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { RecipeContext } from '../RecipeContext';
+import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import RecipeCard from '../components/RecipeCard';
+import RecipeCard from '../../../shared/components/RecipeCard';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function MyFood({ navigation }) {
@@ -10,7 +10,7 @@ export default function MyFood({ navigation }) {
 
   const renderActions = (item) => (
     <>
-      <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('AddRecipe', { recipe: item })}>
+      <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Add Recipe', { recipe: item })}>
         <Ionicons name="create-outline" size={20} color="#48cae4" />
         <Text style={[styles.actionText, { color: '#48cae4' }]}>Edit</Text>
       </TouchableOpacity>

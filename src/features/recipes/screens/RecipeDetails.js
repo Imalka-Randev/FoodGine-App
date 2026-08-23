@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
-import { RecipeContext } from '../RecipeContext';
+import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');

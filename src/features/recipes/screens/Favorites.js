@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { RecipeContext } from '../RecipeContext';
+import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import RecipeCard from '../components/RecipeCard';
+import RecipeCard from '../../../shared/components/RecipeCard';
 
 export default function Favorites({ navigation }) {
   const { favorites } = useContext(RecipeContext);
