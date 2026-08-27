@@ -2,7 +2,6 @@ import React, { useContext } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useHideOnScroll } from '../../../core/utils/TabContext';
 
 import MyRecipeCard from '../../../shared/components/MyRecipeCard';

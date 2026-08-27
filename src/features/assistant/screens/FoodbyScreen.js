@@ -9,7 +9,7 @@ import * as Network from 'expo-network';
 import { useAudioRecorder, requestRecordingPermissionsAsync, RecordingPresets, setAudioModeAsync } from 'expo-audio';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system/legacy';
-import { useHideOnScroll } from '../../../core/utils/TabContext';
+import { useHideOnScroll, TabContext } from '../../../core/utils/TabContext';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -27,10 +27,19 @@ export default function FoodbyScreen({ navigation }) {
   const [isRecording, setIsRecording] = useState(false);
   const scrollViewRef = useRef();
   const { handleScroll, tabBarOffset } = useHideOnScroll();
+  const { hideTabBar, showTabBar } = useContext(TabContext) || {};
   const insets = useSafeAreaInsets();
 
   const { addMyRecipe, myRecipes } = useContext(RecipeContext);
   const { chats, createChat, addMessageToChat, renameChat, deleteChat, setActiveRecipeForChat } = useContext(ChatContext);
+
+  useEffect(() => {
+    if (isRecipeExpanded) {
+      if (hideTabBar) hideTabBar();
+    } else {
+      if (showTabBar) showTabBar();
+    }
+  }, [isRecipeExpanded]);
 
   useEffect(() => {
     checkNetwork();
@@ -414,8 +423,8 @@ export default function FoodbyScreen({ navigation }) {
         </View>
       </Modal>
 
-      <Animated.View style={{ flex: 1, paddingBottom: tabBarOffset.interpolate({ inputRange: [0, 100], outputRange: [49 + insets.bottom, 0], extrapolate: 'clamp' }) }}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, display: isRecipeExpanded ? 'none' : 'flex' }}>
+      <Animated.View style={{ flex: 1, display: isRecipeExpanded ? 'none' : 'flex', paddingBottom: tabBarOffset.interpolate({ inputRange: [0, 100], outputRange: [49 + insets.bottom, 0], extrapolate: 'clamp' }) }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
           <ScrollView 
             style={styles.chatArea} 
             contentContainerStyle={{ paddingBottom: 20 }}
@@ -442,28 +451,34 @@ export default function FoodbyScreen({ navigation }) {
           </ScrollView>
 
           <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder={isOffline ? "Offline mode" : "Message with Foodby..."}
+                value={prompt}
+                onChangeText={setPrompt}
+                multiline
+                editable={!isOffline}
+              />
+              <TouchableOpacity 
+                style={styles.sendButton} 
+                onPress={() => handleAskFoodby(prompt, false)}
+                disabled={!prompt.trim() || loading || isOffline}
+              >
+                <Ionicons 
+                  name={prompt.trim() && !isOffline ? "send" : "send"} 
+                  size={20} 
+                  color={prompt.trim() && !isOffline ? "#fca311" : "#aaa"} 
+                />
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity 
               style={[styles.micButton, isRecording && styles.micButtonRecording]} 
               onPress={isRecording ? stopRecording : startRecording}
               disabled={isOffline || loading}
             >
               <Ionicons name={isRecording ? "stop" : "mic"} size={22} color="#fff" />
-            </TouchableOpacity>
-
-            <TextInput
-              style={styles.input}
-              placeholder={isOffline ? "Offline mode (reading only)" : "Message Foodby..."}
-              value={prompt}
-              onChangeText={setPrompt}
-              multiline
-              editable={!isOffline}
-            />
-            <TouchableOpacity 
-              style={[styles.sendButton, (!prompt.trim() || isOffline) && { opacity: 0.5 }]} 
-              onPress={() => handleAskFoodby(prompt, false)}
-              disabled={!prompt.trim() || loading || isOffline}
-            >
-              <Ionicons name="send" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -535,8 +550,9 @@ const styles = StyleSheet.create({
 
   // Input
   inputContainer: { flexDirection: 'row', padding: 15, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'flex-end' },
-  micButton: { backgroundColor: '#4361ee', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 10, marginBottom: 0 },
-  micButtonRecording: { backgroundColor: '#d62828' },
-  input: { flex: 1, backgroundColor: '#f0f0f0', borderRadius: 20, paddingHorizontal: 15, paddingTop: 12, paddingBottom: 12, maxHeight: 100, fontSize: 16 },
-  sendButton: { backgroundColor: '#fca311', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginLeft: 10, marginBottom: 0 }
+  inputWrapper: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', backgroundColor: '#e6e6e6', borderRadius: 25, paddingLeft: 15, paddingRight: 5, paddingVertical: 4 },
+  input: { flex: 1, fontSize: 16, maxHeight: 100, paddingTop: 10, paddingBottom: 10, color: '#333' },
+  sendButton: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  micButton: { backgroundColor: '#fca311', width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginLeft: 10, marginBottom: 0 },
+  micButtonRecording: { backgroundColor: '#d62828' }
 });

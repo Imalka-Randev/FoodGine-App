@@ -62,20 +62,15 @@ export default function MyRecipeCard({ recipe, onPress, onEdit, onDelete }) {
 const styles = StyleSheet.create({
   // Custom MyRecipes Card Styles
   myRecipesCard: {
-    backgroundColor: '#fff', 
+    backgroundColor: '#ffff', 
     borderRadius: 20,
     marginBottom: 20,
     height: 220, // Exactly FeatureCarousel active card height
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
     overflow: 'hidden',
   },
   imageContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000', 
+    backgroundColor: '#d3d3d3ff', 
   },
   cardImage: {
     width: '100%',
