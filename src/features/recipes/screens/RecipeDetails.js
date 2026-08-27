@@ -38,7 +38,11 @@ export default function RecipeDetails({ route, navigation }) {
             <View style={styles.infoBox}>
               <Ionicons name="people-outline" size={24} color="#fca311" />
               <Text style={styles.infoLabel}>Servings</Text>
-              <Text style={styles.infoValue}>{recipe.servings}</Text>
+              <Text style={styles.infoValue}>
+                {recipe.servings && recipe.servings !== 'N/A' 
+                  ? (recipe.servings.match(/\d+/) ? recipe.servings.match(/\d+/)[0] : recipe.servings)
+                  : 'N/A'}
+              </Text>
             </View>
             <View style={styles.infoBox}>
               <Ionicons name="flame-outline" size={24} color="#fca311" />
@@ -67,7 +71,22 @@ export default function RecipeDetails({ route, navigation }) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Instructions</Text>
             <View style={styles.instructionsCard}>
-              <Text style={styles.instructionsText}>{recipe.instructions}</Text>
+              {recipe.instructions ? recipe.instructions.split('\n').filter(s => s.trim().length > 0).map((step, idx) => {
+                const match = step.match(/^(\d+\.)\s*(.*)/);
+                if (match) {
+                  return (
+                    <View key={idx} style={styles.instructionStepContainer}>
+                      <Text style={styles.instructionNumber}>{match[1]}</Text>
+                      <Text style={styles.instructionsText}>{match[2]}</Text>
+                    </View>
+                  );
+                }
+                return (
+                  <View key={idx} style={styles.instructionStepContainer}>
+                    <Text style={styles.instructionsText}>{step}</Text>
+                  </View>
+                );
+              }) : null}
             </View>
           </View>
         </View>
@@ -226,9 +245,20 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
+  instructionStepContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  instructionNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fca311',
+    marginRight: 8,
+  },
   instructionsText: { 
+    flex: 1,
     fontSize: 16, 
     color: '#444', 
-    lineHeight: 26,
+    lineHeight: 24,
   }
 });

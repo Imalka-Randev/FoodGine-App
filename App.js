@@ -4,6 +4,7 @@ import { LogBox } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider } from './src/features/auth/AuthContext'; // Import this!
 import { RecipeProvider } from './src/core/utils/RecipeContext';
+import { ChatProvider } from './src/core/utils/ChatContext';
 import AppNavigator from './src/core/navigation/AppNavigator';
 
 LogBox.ignoreLogs(['InteractionManager has been deprecated']);
@@ -20,9 +21,11 @@ export default function App() {
   return (
     <AuthProvider>
       <RecipeProvider>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
+        <ChatProvider>
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+        </ChatProvider>
       </RecipeProvider>
     </AuthProvider>
   );

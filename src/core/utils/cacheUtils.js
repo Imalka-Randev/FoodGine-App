@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export const cacheImageLocally = async (imageUrl, recipeId) => {
   if (!imageUrl) return null;

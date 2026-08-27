@@ -8,7 +8,7 @@ export default function CategoryItem({ category, isSelected, onPress }) {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Image source={{ uri: category.image }} style={styles.image} />
+      <Image source={category.image} style={styles.image} />
       <Text style={[styles.text, isSelected && styles.textSelected]}>
         {category.name}
       </Text>

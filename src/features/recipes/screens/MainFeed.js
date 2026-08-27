@@ -4,18 +4,20 @@ import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RecipeCard from '../../../shared/components/RecipeCard';
 import CategoryItem from '../../../shared/components/CategoryItem';
+import FeatureCarousel from '../../../shared/components/FeatureCarousel';
 import { Ionicons } from '@expo/vector-icons'; // Added for the search icon
 import { useAuth } from '../../auth/AuthContext';
+import { useHideOnScroll } from '../../../core/utils/TabContext';
 
 const categories = [
-  { name: 'All', image: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=150&q=80' },
-  { name: 'Beef', image: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=150&q=80' },
-  { name: 'Chicken', image: 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=150&q=80' },
-  { name: 'Dessert', image: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=150&q=80' },
-  { name: 'Lamb', image: 'https://images.unsplash.com/photo-1588168333986-5078d3ae3976?auto=format&fit=crop&w=150&q=80' },
-  { name: 'Seafood', image: 'https://images.unsplash.com/photo-1615141982883-c7da0ead3447?auto=format&fit=crop&w=150&q=80' },
-  { name: 'Pasta', image: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=150&q=80' },
-  { name: 'Vegetarian', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=150&q=80' },
+  { name: 'All', image: require('../../../../assets/images/categories/all.jpg') },
+  { name: 'Beef', image: require('../../../../assets/images/categories/beef.jpg') },
+  { name: 'Chicken', image: require('../../../../assets/images/categories/chicken.jpg') },
+  { name: 'Dessert', image: require('../../../../assets/images/categories/dessert.jpg') },
+  { name: 'Lamb', image: require('../../../../assets/images/categories/lamb.jpg') },
+  { name: 'Seafood', image: require('../../../../assets/images/categories/seafood.jpg') },
+  { name: 'Pasta', image: require('../../../../assets/images/categories/pasta.jpg') },
+  { name: 'Vegetarian', image: require('../../../../assets/images/categories/vegetarian.jpg') },
 ];
 
 const { width } = Dimensions.get('window');
@@ -24,82 +26,135 @@ export default function MainFeed({ navigation }) {
   const { user } = useAuth();
   const { recipes } = useContext(RecipeContext);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  // NEW: State to hold the user's search text
   const [searchQuery, setSearchQuery] = useState('');
 
-  // NEW: Updated filtering logic (Filters by Category AND Search text)
   const filteredRecipes = recipes.filter((r) => {
     const matchesCategory = selectedCategory === 'All' || r.category === selectedCategory;
     const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.headerContainer}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.greeting}>Hello, {user?.displayName || 'Foodie'}! 👋</Text>
-            <Text style={styles.title}>
-              Make your own food, stay at <Text style={styles.highlight}>home</Text>
-            </Text>
+  // Format recipes into rows of 2 for the FlatList
+  const formatData = (dataList, numColumns) => {
+    const formattedData = [];
+    for (let i = 0; i < dataList.length; i += numColumns) {
+      formattedData.push(dataList.slice(i, i + numColumns));
+    }
+    return formattedData;
+  };
+
+  const recipeRows = formatData(filteredRecipes, 2);
+
+  // Construct flat list data
+  const listData = [
+    { type: 'header', id: 'header' },
+    { type: 'sticky_section', id: 'sticky_section' },
+    ...recipeRows.map((row, index) => ({ type: 'row', id: `row_${index}`, items: row }))
+  ];
+
+  if (filteredRecipes.length === 0) {
+    listData.push({ type: 'empty', id: 'empty' });
+  }
+
+  const renderItem = ({ item }) => {
+    if (item.type === 'header') {
+      return (
+        <View style={styles.headerContainer}>
+          <View style={styles.headerTopRow}>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.greeting}>Hello, {user?.displayName || 'Foodie'}! 👋</Text>
+              <Text style={styles.title}>
+                Make your own food, stay at <Text style={styles.highlight}>home</Text>
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              {user?.photoURL ? (
+                <Image source={{ uri: user.photoURL }} style={styles.headerAvatar} />
+              ) : (
+                <Ionicons name="person-circle-outline" size={50} color="#fca311" />
+              )}
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            {user?.photoURL ? (
-              <Image source={{ uri: user.photoURL }} style={styles.headerAvatar} />
-            ) : (
-              <Ionicons name="person-circle-outline" size={50} color="#fca311" />
-            )}
-          </TouchableOpacity>
+          <FeatureCarousel />
         </View>
-        
-        {/* NEW: Modern Search Bar UI */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#888" style={styles.searchIcon} />
-          <TextInput 
-            style={styles.searchInput}
-            placeholder="Search recipes..."
-            placeholderTextColor="#888"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+      );
+    }
+    
+    if (item.type === 'sticky_section') {
+      return (
+        <View style={styles.stickyContainer}>
+          <View style={styles.searchSection}>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search-outline" size={20} color="#888" style={styles.searchIcon} />
+              <TextInput 
+                style={styles.searchInput}
+                placeholder="Search recipes..."
+                placeholderTextColor="#888"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+          </View>
+          <View style={styles.categoriesSection}>
+            <View style={styles.categoryContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                {categories.map((cat, index) => (
+                  <CategoryItem 
+                    key={index}
+                    category={cat}
+                    isSelected={selectedCategory === cat.name}
+                    onPress={() => setSelectedCategory(cat.name)}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+            <View style={styles.listContainer}>
+              <Text style={styles.sectionTitle}>Featured Recipes</Text>
+            </View>
+          </View>
         </View>
-      </View>
+      );
+    }
 
-      <View style={styles.categoryContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-          {categories.map((cat, index) => (
-            <CategoryItem 
-              key={index}
-              category={cat}
-              isSelected={selectedCategory === cat.name}
-              onPress={() => setSelectedCategory(cat.name)}
-            />
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={styles.listContainer}>
-        <Text style={styles.sectionTitle}>Featured Recipes</Text>
-        <FlatList
-          data={filteredRecipes}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          showsVerticalScrollIndicator={false}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.flatListContent}
-          // Show a message if no recipes match the search
-          ListEmptyComponent={<Text style={styles.emptyText}>No recipes found.</Text>}
-          renderItem={({ item }) => (
+    if (item.type === 'row') {
+      return (
+        <View style={[styles.listContainer, styles.row]}>
+          {item.items.map(recipe => (
             <RecipeCard 
-              recipe={item} 
-              onPress={() => navigation.navigate('RecipeDetails', { recipe: item })}
+              key={recipe.id}
+              recipe={recipe} 
+              onPress={() => navigation.navigate('RecipeDetails', { recipe })}
               style={styles.cardHalfWidth}
             />
-          )}
-        />
-      </View>
+          ))}
+          {item.items.length === 1 && <View style={styles.cardHalfWidth} />}
+        </View>
+      );
+    }
+
+    if (item.type === 'empty') {
+      return (
+        <Text style={styles.emptyText}>No recipes found.</Text>
+      );
+    }
+
+    return null;
+  };
+
+  const { handleScroll } = useHideOnScroll();
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <FlatList
+        data={listData}
+        keyExtractor={item => item.id}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]} // Make the search bar sticky!
+        contentContainerStyle={styles.flatListContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      />
     </SafeAreaView>
   );
 }
@@ -109,10 +164,13 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#fafafa' 
   },
+  stickyContainer: {
+    backgroundColor: '#fafafa',
+  },
   headerContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 10,
+    paddingBottom: 0,
   },
   greeting: { 
     fontSize: 16, 
@@ -142,13 +200,17 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
   },
-  // NEW: Search styles
+  searchSection: {
+    backgroundColor: '#fafafa',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    zIndex: 10,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginTop: 20,
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderWidth: 1,
@@ -173,6 +235,9 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 16,
   },
+  categoriesSection: {
+    paddingTop: 10,
+  },
   categoryContainer: { 
     height: 110, 
     marginBottom: 10,
@@ -181,7 +246,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   listContainer: {
-    flex: 1,
     paddingHorizontal: 20,
   },
   sectionTitle: { 
@@ -191,12 +255,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   row: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 15,
   },
   flatListContent: {
-    paddingBottom: 20,
+    paddingBottom: 80,
   },
   cardHalfWidth: {
-    width: (width - 56) / 2, // Account for padding and space between
+    width: (width - 56) / 2,
   }
 });

@@ -1,18 +1,26 @@
 import React, { useState, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView, Image, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useHideOnScroll } from '../../../core/utils/TabContext';
 
 export default function AddRecipe({ route, navigation }) {
-  const { addMyFood, editRecipe } = useContext(RecipeContext);
+  const { addMyRecipe, editRecipe } = useContext(RecipeContext);
+  const { handleScroll } = useHideOnScroll();
   const recipeToEdit = route.params?.recipe;
 
   const [name, setName] = useState(recipeToEdit ? recipeToEdit.name : '');
+  const [prepTime, setPrepTime] = useState(recipeToEdit ? recipeToEdit.prepTime : '');
+  const [servings, setServings] = useState(recipeToEdit ? recipeToEdit.servings : '');
+  const [calories, setCalories] = useState(recipeToEdit ? recipeToEdit.calories : '');
+  const [difficulty, setDifficulty] = useState(recipeToEdit ? recipeToEdit.difficulty : '');
   const [ingredients, setIngredients] = useState(recipeToEdit ? recipeToEdit.ingredients.join(', ') : '');
   const [instructions, setInstructions] = useState(recipeToEdit ? recipeToEdit.instructions : '');
   const [imageUri, setImageUri] = useState(recipeToEdit ? recipeToEdit.image : null);
+  const [isPublic, setIsPublic] = useState(recipeToEdit ? recipeToEdit.isPublic : false);
+  const [focusedInput, setFocusedInput] = useState(null);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -36,45 +44,55 @@ export default function AddRecipe({ route, navigation }) {
     const recipeData = {
       id: recipeToEdit ? recipeToEdit.id : Math.random().toString(),
       name,
-      category: recipeToEdit ? recipeToEdit.category : 'My Food',
-      prepTime: recipeToEdit ? recipeToEdit.prepTime : 'N/A',
-      servings: recipeToEdit ? recipeToEdit.servings : 'N/A',
-      calories: recipeToEdit ? recipeToEdit.calories : 'N/A',
-      difficulty: recipeToEdit ? recipeToEdit.difficulty : 'N/A',
+      category: recipeToEdit ? recipeToEdit.category : 'My Recipes',
+      prepTime: prepTime || 'N/A',
+      servings: servings || 'N/A',
+      calories: calories || 'N/A',
+      difficulty: difficulty || 'N/A',
       ingredients: ingredients.split(',').map(i => i.trim()).filter(i => i),
       instructions,
-      image: imageUri && imageUri !== 'placeholder_url' ? imageUri : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'
+      isPublic, // Passed to Firebase
+      image: imageUri && imageUri !== 'placeholder_url' ? imageUri : require('../../../../assets/images/fallbacks/default_recipe.jpg')
     };
     
     if (recipeToEdit) {
       editRecipe(recipeData);
     } else {
-      addMyFood(recipeData);
+      addMyRecipe(recipeData);
     }
     
     if (recipeToEdit) {
       navigation.goBack();
     } else {
-      navigation.navigate('My Food');
-      // Reset form if it's a new addition
+      navigation.navigate('My Recipes');
       setName('');
+      setPrepTime('');
+      setServings('');
+      setCalories('');
+      setDifficulty('');
       setIngredients('');
       setInstructions('');
       setImageUri(null);
+      setIsPublic(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.title}>{recipeToEdit ? 'Edit Recipe' : 'Add Recipe'}</Text>
+        <Text style={styles.title}>{recipeToEdit ? 'Edit' : 'Add'} <Text style={styles.highlight}>Recipe</Text></Text>
       </View>
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
           
           <TouchableOpacity style={styles.imageUpload} onPress={pickImage} activeOpacity={0.8}>
             {imageUri && imageUri !== 'placeholder_url' ? (
@@ -92,40 +110,107 @@ export default function AddRecipe({ route, navigation }) {
             )}
           </TouchableOpacity>
           
+          <View style={styles.foodbyPromo}>
+            <Ionicons name="sparkles" size={20} color="#fca311" style={{ marginRight: 8 }} />
+            <Text style={styles.promoText}>
+              Need a chef expert? <Text style={styles.promoHighlight} onPress={() => navigation.navigate('Foodby')}>Foodby</Text> here to help you!
+            </Text>
+          </View>
+          
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Recipe Name</Text>
             <TextInput 
-              style={styles.input} 
+              style={[styles.input, focusedInput === 'name' && styles.inputFocused]} 
               placeholder="e.g. Delicious Pasta" 
               value={name} 
               onChangeText={setName} 
               placeholderTextColor="#aaa"
+              onFocus={() => setFocusedInput('name')}
+              onBlur={() => setFocusedInput(null)}
             />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Recipe Details</Text>
+            <View style={styles.row}>
+              <TextInput 
+                style={[styles.input, styles.halfInput, focusedInput === 'prepTime' && styles.inputFocused]} 
+                placeholder="Time (e.g. 20 Mins)" 
+                value={prepTime} 
+                onChangeText={setPrepTime} 
+                placeholderTextColor="#aaa" 
+                onFocus={() => setFocusedInput('prepTime')}
+                onBlur={() => setFocusedInput(null)}
+              />
+              <TextInput 
+                style={[styles.input, styles.halfInput, focusedInput === 'servings' && styles.inputFocused]} 
+                placeholder="Servings (e.g. 2)" 
+                value={servings} 
+                onChangeText={setServings} 
+                placeholderTextColor="#aaa" 
+                onFocus={() => setFocusedInput('servings')}
+                onBlur={() => setFocusedInput(null)}
+              />
+            </View>
+            <View style={[styles.row, { marginTop: 10 }]}>
+              <TextInput 
+                style={[styles.input, styles.halfInput, focusedInput === 'calories' && styles.inputFocused]} 
+                placeholder="Calories (e.g. 300 Cal)" 
+                value={calories} 
+                onChangeText={setCalories} 
+                placeholderTextColor="#aaa" 
+                onFocus={() => setFocusedInput('calories')}
+                onBlur={() => setFocusedInput(null)}
+              />
+              <TextInput 
+                style={[styles.input, styles.halfInput, focusedInput === 'difficulty' && styles.inputFocused]} 
+                placeholder="Level (e.g. Easy)" 
+                value={difficulty} 
+                onChangeText={setDifficulty} 
+                placeholderTextColor="#aaa" 
+                onFocus={() => setFocusedInput('difficulty')}
+                onBlur={() => setFocusedInput(null)}
+              />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Ingredients</Text>
             <TextInput 
-              style={[styles.input, styles.textArea]} 
+              style={[styles.input, styles.textArea, focusedInput === 'ingredients' && styles.inputFocused]} 
               placeholder="Tomatoes, Basil, Garlic (comma separated)" 
               value={ingredients} 
               onChangeText={setIngredients} 
               multiline 
               textAlignVertical="top"
               placeholderTextColor="#aaa"
+              onFocus={() => setFocusedInput('ingredients')}
+              onBlur={() => setFocusedInput(null)}
             />
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Instructions</Text>
             <TextInput 
-              style={[styles.input, styles.textArea]} 
+              style={[styles.input, styles.textArea, focusedInput === 'instructions' && styles.inputFocused]} 
               placeholder="1. Boil water..." 
               value={instructions} 
               onChangeText={setInstructions} 
               multiline 
               textAlignVertical="top"
               placeholderTextColor="#aaa"
+              onFocus={() => setFocusedInput('instructions')}
+              onBlur={() => setFocusedInput(null)}
+            />
+          </View>
+
+          <View style={styles.switchContainer}>
+            <Text style={styles.label}>Make Recipe Public?</Text>
+            <Switch
+              value={isPublic}
+              onValueChange={setIsPublic}
+              trackColor={{ false: '#767577', true: '#fca311' }}
+              thumbColor={isPublic ? '#fff' : '#f4f3f4'}
             />
           </View>
           
@@ -153,6 +238,10 @@ const styles = StyleSheet.create({
     fontSize: 28, 
     fontWeight: '800', 
     color: '#333',
+    textAlign: 'center',
+  },
+  highlight: {
+    color: '#fca311',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -213,13 +302,44 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  inputFocused: {
+    borderColor: '#fca311',
+    borderWidth: 2,
+  },
+  foodbyPromo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff8eb',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#ffe4b5',
+  },
+  promoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+  },
+  promoHighlight: {
+    color: '#fca311',
+    fontWeight: 'bold',
+  },
   textArea: {
     height: 120,
     paddingTop: 16, // to ensure top alignment looks good
   },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
   saveButton: { 
     backgroundColor: '#fca311', 
-    padding: 18, 
+    padding: 15, 
     borderRadius: 16, 
     alignItems: 'center',
     marginTop: 10,
@@ -228,11 +348,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+    width: "50%",
+    alignSelf: "center",
   },
   saveButtonText: { 
     color: '#fff', 
     fontSize: 18, 
     fontWeight: 'bold',
     letterSpacing: 0.5,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  halfInput: {
+    width: '48%',
   }
 });

@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
 const recipesCollection = collection(db, 'recipes');
@@ -39,6 +39,31 @@ export const recipeService = {
       return docRef.id;
     } catch (error) {
       console.error("Error adding recipe:", error);
+      throw error;
+    }
+  },
+
+  // 4. Update an Existing Recipe
+  updateRecipe: async (id, updatedData) => {
+    try {
+      const docRef = doc(db, 'recipes', id);
+      await updateDoc(docRef, {
+        ...updatedData,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error updating recipe:", error);
+      throw error;
+    }
+  },
+
+  // 5. Delete a Recipe
+  deleteRecipe: async (id) => {
+    try {
+      const docRef = doc(db, 'recipes', id);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error("Error deleting recipe:", error);
       throw error;
     }
   }

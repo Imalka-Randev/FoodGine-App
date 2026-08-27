@@ -1,35 +1,41 @@
 import React, { useContext } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import RecipeCard from '../../../shared/components/RecipeCard';
+import { Ionicons } from '@expo/vector-icons';
 import { useHideOnScroll } from '../../../core/utils/TabContext';
 
-export default function Favorites({ navigation }) {
-  const { favorites } = useContext(RecipeContext);
+import MyRecipeCard from '../../../shared/components/MyRecipeCard';
+
+export default function MyRecipes({ navigation }) {
+  const { myRecipes, deleteMyRecipe } = useContext(RecipeContext);
   const { handleScroll } = useHideOnScroll();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <Text style={styles.title}>My <Text style={styles.highlight}>Favorites</Text></Text>
-      
-      {favorites.length === 0 ? (
+      <View style={styles.header}>
+        <Text style={styles.title}>My <Text style={styles.highlight}>Recipes</Text></Text>
+      </View>
+
+      {myRecipes.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No favorites added yet.</Text>
-          <Text style={styles.emptySubtext}>Heart your favorite recipes and they'll appear here.</Text>
+          <Text style={styles.emptyText}>No recipes added yet.</Text>
+          <Text style={styles.emptySubtext}>Create your own custom recipes!</Text>
         </View>
       ) : (
         <FlatList
-          data={favorites}
+          data={myRecipes}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           onScroll={handleScroll}
           scrollEventThrottle={16}
           renderItem={({ item }) => (
-            <RecipeCard 
-              recipe={item} 
-              onPress={() => navigation.navigate('RecipeDetails', { recipe: item })} 
+            <MyRecipeCard 
+              recipe={item}
+              onPress={() => navigation.navigate('RecipeDetails', { recipe: item })}
+              onEdit={() => navigation.navigate('Add Recipe', { recipe: item })}
+              onDelete={() => deleteMyRecipe(item.id)}
             />
           )}
         />
@@ -41,15 +47,17 @@ export default function Favorites({ navigation }) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#fafafa',
+    backgroundColor: '#fafafa' 
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   title: { 
     fontSize: 28, 
     fontWeight: '800', 
     color: '#333',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
     textAlign: 'center',
   },
   highlight: {
@@ -73,7 +81,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   listContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 30, // 30 on each side means width is width - 60 (same as carousel)
     paddingBottom: 80,
-  }
+  },
 });
