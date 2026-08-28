@@ -6,16 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import MainFeed from '../../features/recipes/screens/MainFeed';
 import RecipeDetails from '../../features/recipes/screens/RecipeDetails';
 import Favorites from '../../features/recipes/screens/Favorites';
-import MyRecipes from '../../features/myRecipes/screens/MyRecipes';
+import MyRecipes from '../../features/myRecipes/MyRecipes';
 import AddRecipe from '../../features/recipes/screens/AddRecipe';
 
-import { useAuth } from '../../features/auth/AuthContext';
+import { useAuth } from '../utils/AuthContext';
 import { View, ActivityIndicator, Animated } from 'react-native';
 import AuthNavigator from './AuthNavigator';
-import ProfileScreen from '../../features/auth/screens/ProfileScreen';
-import SettingsScreen from '../../features/auth/screens/SettingsScreen';
+import ProfileScreen from '../../features/auth/screens/Profile/ProfileScreen';
+import SettingsScreen from '../../features/auth/screens/Settings/SettingsScreen';
 
-import FoodbyScreen from '../../features/assistant/screens/FoodbyScreen';
+import FoodbyScreen from '../../features/FoodbyAI/FoodbyScreen';
 import { TabProvider, TabContext } from '../utils/TabContext';
 
 const Stack = createStackNavigator();

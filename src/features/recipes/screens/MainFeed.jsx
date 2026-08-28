@@ -1,16 +1,13 @@
-import React, { useContext, useState, useMemo, useCallback } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, StyleSheet, FlatList, Dimensions, TextInput, TouchableOpacity } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RecipeCard from '../../../shared/components/RecipeCard';
 import SkeletonCard from '../../../shared/components/SkeletonCard';
 import CategoryItem from '../../../shared/components/CategoryItem';
 import FeatureCarousel from '../../../shared/components/FeatureCarousel';
-import { Ionicons } from '@expo/vector-icons'; // Added for the search icon
-import { useAuth } from '../../auth/AuthContext';
-import { useHideOnScroll } from '../../../core/utils/TabContext';
+import { Ionicons } from '@expo/vector-icons';
+import useMainFeed from '../hooks/useMainFeed';
 
 const categories = [
   { name: 'All', image: require('../../../../assets/images/categories/all.jpg') },
@@ -26,50 +23,13 @@ const categories = [
 const { width } = Dimensions.get('window');
 
 export default function MainFeed({ navigation }) {
-  const { user } = useAuth();
-  const { recipes, loading } = useContext(RecipeContext);
-  const { handleScroll, showTabBar } = useHideOnScroll();
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  useFocusEffect(
-    useCallback(() => {
-      if (showTabBar) showTabBar();
-    }, [showTabBar])
-  );
-
-  const filteredRecipes = recipes.filter((r) => {
-    const matchesCategory = selectedCategory === 'All' || r.category === selectedCategory;
-    const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const listData = useMemo(() => {
-    // Format recipes into rows of 2 for the FlatList
-    const formatData = (dataList, numColumns) => {
-      const formattedData = [];
-      for (let i = 0; i < dataList.length; i += numColumns) {
-        formattedData.push(dataList.slice(i, i + numColumns));
-      }
-      return formattedData;
-    };
-
-    const recipeRows = formatData(filteredRecipes, 2);
-
-    const data = [
-      { type: 'header', id: 'header' },
-      { type: 'sticky_section', id: 'sticky_section' },
-      ...recipeRows.map((row, index) => ({ type: 'row', id: `row_${index}`, items: row }))
-    ];
-
-    if (loading) {
-      data.push({ type: 'loading', id: 'loading' });
-    } else if (filteredRecipes.length === 0) {
-      data.push({ type: 'empty', id: 'empty' });
-    }
-    
-    return data;
-  }, [filteredRecipes]);
+  const {
+    user,
+    listData,
+    selectedCategory, setSelectedCategory,
+    searchQuery, setSearchQuery,
+    handleScroll
+  } = useMainFeed();
 
   const renderItem = ({ item }) => {
     if (item.type === 'header') {

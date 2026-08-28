@@ -2,9 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableWithoutFeedback, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Image } from 'expo-image';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const { width } = Dimensions.get('window');
 

@@ -2,16 +2,13 @@ import React, { useContext, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Alert, KeyboardAvoidingView, Platform, Modal, FlatList, LayoutAnimation, UIManager, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RecipeContext } from '../../../core/utils/RecipeContext';
-import { aiService } from '../../../services/ai/aiService';
-import { useHideOnScroll, TabContext } from '../../../core/utils/TabContext';
-import useFoodbyChat from '../hooks/useFoodbyChat';
-import useVoiceRecording from '../hooks/useVoiceRecording';
+import { RecipeContext } from '../../core/utils/RecipeContext';
+import { aiService } from '../../services/ai/aiService';
+import { useHideOnScroll, TabContext } from '../../core/utils/TabContext';
+import useFoodbyChat from './hooks/useFoodbyChat';
+import useVoiceRecording from './hooks/useVoiceRecording';
 
 // Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export default function FoodbyScreen({ navigation }) {
   const { addMyRecipe, myRecipes } = useContext(RecipeContext);
@@ -87,7 +84,7 @@ export default function FoodbyScreen({ navigation }) {
       ingredients: aiRecipe.ingredients,
       instructions: aiRecipe.instructions,
       isPublic: isPublic,
-      image: require('../../../../assets/images/fallbacks/foodby_recipe.jpg') 
+      image: require('../../../assets/images/fallbacks/foodby_recipe.jpg') 
     };
 
     addMyRecipe(newRecipe);
@@ -284,8 +281,8 @@ export default function FoodbyScreen({ navigation }) {
                 disabled={!prompt.trim() || loading || isOffline}
               >
                 <Ionicons 
-                  name={prompt.trim() && !isOffline ? "send" : "send"} 
-                  size={20} 
+                  name="send" 
+                  size={24} 
                   color={prompt.trim() && !isOffline ? "#fca311" : "#aaa"} 
                 />
               </TouchableOpacity>
@@ -368,7 +365,7 @@ const styles = StyleSheet.create({
 
   // Input
   inputContainer: { flexDirection: 'row', padding: 15, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'flex-end' },
-  inputWrapper: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', backgroundColor: '#e6e6e6', borderRadius: 25, paddingLeft: 15, paddingRight: 5, paddingVertical: 4 },
+  inputWrapper: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e9ecef', borderRadius: 25, paddingLeft: 15, paddingRight: 5, paddingVertical: 4 },
   input: { flex: 1, fontSize: 16, maxHeight: 100, paddingTop: 10, paddingBottom: 10, color: '#333' },
   sendButton: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   micButton: { backgroundColor: '#fca311', width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginLeft: 10, marginBottom: 0 },

@@ -1,36 +1,15 @@
-import React, { useContext, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { RecipeContext } from '../../../core/utils/RecipeContext';
+import React from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RecipeCard from '../../../shared/components/RecipeCard';
-import { useHideOnScroll } from '../../../core/utils/TabContext';
+import useFavorites from '../hooks/useFavorites';
 
 export default function Favorites({ navigation }) {
-  const { favorites, toggleFavorite } = useContext(RecipeContext);
-  const { handleScroll, showTabBar } = useHideOnScroll();
-
-  useFocusEffect(
-    useCallback(() => {
-      if (showTabBar) showTabBar();
-    }, [showTabBar])
-  );
-
-  const handleRemove = (recipe) => {
-    Alert.alert(
-      "Remove Favorite",
-      `Are you sure you want to remove "${recipe.name}" from favorites?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Remove", 
-          style: "destructive", 
-          onPress: () => toggleFavorite(recipe) 
-        }
-      ]
-    );
-  };
+  const {
+    favorites,
+    handleScroll,
+    handleRemove
+  } = useFavorites();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>

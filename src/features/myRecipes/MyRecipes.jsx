@@ -1,40 +1,19 @@
-import React, { useContext, useState, useMemo, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React from 'react';
+import { View, Text, FlatList, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useHideOnScroll } from '../../../core/utils/TabContext';
-
-import MyRecipeCard from '../../../shared/components/MyRecipeCard';
-import SkeletonCard from '../../../shared/components/SkeletonCard';
+import MyRecipeCard from '../../shared/components/MyRecipeCard';
+import SkeletonCard from '../../shared/components/SkeletonCard';
+import useMyRecipes from './useMyRecipes';
 
 export default function MyRecipes({ navigation }) {
-  const { myRecipes, deleteMyRecipe, loading } = useContext(RecipeContext);
-  const { handleScroll, showTabBar } = useHideOnScroll();
-  const [searchQuery, setSearchQuery] = useState('');
-
-  useFocusEffect(
-    useCallback(() => {
-      if (showTabBar) showTabBar();
-    }, [showTabBar])
-  );
-
-  const filteredRecipes = useMemo(() => {
-    if (!searchQuery) return myRecipes;
-    return myRecipes.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [myRecipes, searchQuery]);
-
-  const confirmDelete = (id, name) => {
-    Alert.alert(
-      "Delete Recipe",
-      `Are you sure you want to delete "${name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteMyRecipe(id) }
-      ]
-    );
-  };
+  const {
+    loading,
+    searchQuery, setSearchQuery,
+    filteredRecipes,
+    confirmDelete,
+    handleScroll
+  } = useMyRecipes();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -148,7 +127,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   listContent: {
-    paddingHorizontal: 30, // 30 on each side means width is width - 60 (same as carousel)
+    paddingHorizontal: 20,
     paddingBottom: 80,
   },
 });

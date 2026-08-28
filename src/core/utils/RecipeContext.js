@@ -1,66 +1,13 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { recipeService } from '../../services/firebase/recipeService';
-import { useAuth } from '../../features/auth/AuthContext';
+import { useAuth } from './AuthContext';
 import { cacheImageLocally } from './cacheUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const RecipeContext = createContext();
+import { defaultRecipes } from '../../data/defaultRecipes';
 
-const DEFAULT_RECIPES = [
-  {
-    id: 'default-1',
-    name: 'Spaghetti Bolognese',
-    category: 'Pasta',
-    prepTime: '45 Mins',
-    servings: '4',
-    calories: '600 Cal',
-    difficulty: 'Easy',
-    image: require('../../../assets/images/fallbacks/dummy1.jpg'),
-    ingredients: ['Spaghetti', 'Minced Beef', 'Tomato Sauce', 'Onion', 'Garlic', 'Olive Oil', 'Parmesan'],
-    instructions: '1. Boil pasta.\n2. Fry onions and garlic.\n3. Add beef and brown.\n4. Add tomato sauce and simmer.\n5. Serve over pasta with parmesan.',
-    isPublic: true
-  },
-  {
-    id: 'default-2',
-    name: 'Grilled Salmon',
-    category: 'Seafood',
-    prepTime: '25 Mins',
-    servings: '2',
-    calories: '450 Cal',
-    difficulty: 'Medium',
-    image: require('../../../assets/images/fallbacks/dummy2.jpg'),
-    ingredients: ['Salmon Fillet', 'Lemon', 'Olive Oil', 'Salt', 'Black Pepper', 'Asparagus'],
-    instructions: '1. Preheat grill.\n2. Season salmon with oil, salt, and pepper.\n3. Grill for 6-8 mins per side.\n4. Serve with grilled asparagus and lemon.',
-    isPublic: true
-  },
-  {
-    id: 'default-3',
-    name: 'Chicken Tikka Masala',
-    category: 'Chicken',
-    prepTime: '60 Mins',
-    servings: '4',
-    calories: '550 Cal',
-    difficulty: 'Medium',
-    image: require('../../../assets/images/fallbacks/dummy3.jpg'),
-    ingredients: ['Chicken Breast', 'Yogurt', 'Tikka Masala Paste', 'Tomato Puree', 'Heavy Cream', 'Onion', 'Cilantro'],
-    instructions: '1. Marinate chicken in yogurt and spices.\n2. Grill or bake chicken until cooked.\n3. Sauté onions, add masala paste and tomato puree.\n4. Stir in cream and simmer.\n5. Add chicken and garnish with cilantro.',
-    isPublic: true
-  },
-  {
-    id: 'default-4',
-    name: 'Vegetable Stir Fry',
-    category: 'Vegetarian',
-    prepTime: '15 Mins',
-    servings: '2',
-    calories: '250 Cal',
-    difficulty: 'Easy',
-    image: require('../../../assets/images/fallbacks/dummy4.jpg'),
-    ingredients: ['Broccoli', 'Bell Peppers', 'Carrots', 'Soy Sauce', 'Ginger', 'Garlic', 'Sesame Oil'],
-    instructions: '1. Chop all vegetables.\n2. Heat sesame oil in a wok.\n3. Stir fry ginger and garlic, then add vegetables.\n4. Toss with soy sauce until tender-crisp.',
-    isPublic: true
-  }
-];
+export const RecipeContext = createContext();
 
 export const RecipeProvider = ({ children }) => {
   const { user } = useAuth(); // Get logged in user from Phase 2!
@@ -87,9 +34,9 @@ export const RecipeProvider = ({ children }) => {
         const otherUsersRecipes = globalData
            .filter(r => r.userId !== user?.uid)
            .map(sanitizeRecipeImage);
-        setRecipes([...DEFAULT_RECIPES, ...otherUsersRecipes]);
+        setRecipes([...defaultRecipes, ...otherUsersRecipes]);
       } else {
-        setRecipes(DEFAULT_RECIPES);
+        setRecipes(defaultRecipes);
       }
 
       // 2. Fetch User Recipes (if logged in)

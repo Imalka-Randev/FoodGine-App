@@ -1,65 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../AuthContext';
-import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import useSettings from './useSettings';
 
 export default function SettingsScreen({ navigation }) {
-  const { user } = useAuth();
-  
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [loadingName, setLoadingName] = useState(false);
-  const [loadingPass, setLoadingPass] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-
-  const handleUpdateName = async () => {
-    if (!displayName.trim()) {
-      Alert.alert('Error', 'Display name cannot be empty');
-      return;
-    }
-    setLoadingName(true);
-    try {
-      await updateProfile(user, { displayName: displayName.trim() });
-      Alert.alert('Success', 'Display name updated successfully!');
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoadingName(false);
-    }
-  };
-
-  const handleUpdatePassword = async () => {
-    if (!currentPassword || !newPassword) {
-      Alert.alert('Error', 'Please enter both current and new passwords');
-      return;
-    }
-    if (newPassword.length < 6) {
-      Alert.alert('Error', 'New password must be at least 6 characters');
-      return;
-    }
-
-    setLoadingPass(true);
-    try {
-      // Re-authenticate user first (industry standard requirement for sensitive operations)
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(user, credential);
-      
-      // Now update the password
-      await updatePassword(user, newPassword);
-      
-      Alert.alert('Success', 'Password updated successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoadingPass(false);
-    }
-  };
+  const {
+    displayName, setDisplayName,
+    currentPassword, setCurrentPassword,
+    newPassword, setNewPassword,
+    loadingName,
+    loadingPass,
+    showCurrentPassword, setShowCurrentPassword,
+    showNewPassword, setShowNewPassword,
+    handleUpdateName,
+    handleUpdatePassword
+  } = useSettings();
 
   return (
     <SafeAreaView style={styles.container}>

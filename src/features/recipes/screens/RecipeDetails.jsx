@@ -1,15 +1,17 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { Ionicons } from '@expo/vector-icons';
+import useRecipeDetails from '../hooks/useRecipeDetails';
 
 const { width } = Dimensions.get('window');
 
 export default function RecipeDetails({ route, navigation }) {
-  const { recipe } = route.params;
-  const { toggleFavorite, favorites } = useContext(RecipeContext);
-  const isFav = favorites.find((r) => r.id === recipe.id);
+  const {
+    recipe,
+    isFav,
+    toggleFavorite
+  } = useRecipeDetails(route, navigation);
 
   return (
     <View style={styles.container}>

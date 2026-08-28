@@ -2,7 +2,7 @@
 import React from 'react';
 import { LogBox } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { AuthProvider } from './src/features/auth/AuthContext'; // Import this!
+import { AuthProvider } from './src/core/utils/AuthContext'; // Import this!
 import { RecipeProvider } from './src/core/utils/RecipeContext';
 import { ChatProvider } from './src/core/utils/ChatContext';
 import AppNavigator from './src/core/navigation/AppNavigator';
