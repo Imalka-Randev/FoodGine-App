@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView, Image, KeyboardAvoidingView, Platform, Switch } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Switch, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,11 +17,61 @@ export default function AddRecipe({ route, navigation }) {
   const [servings, setServings] = useState(recipeToEdit ? recipeToEdit.servings : '');
   const [calories, setCalories] = useState(recipeToEdit ? recipeToEdit.calories : '');
   const [difficulty, setDifficulty] = useState(recipeToEdit ? recipeToEdit.difficulty : '');
-  const [ingredients, setIngredients] = useState(recipeToEdit ? recipeToEdit.ingredients.join(', ') : '');
+  const [ingredients, setIngredients] = useState(recipeToEdit && recipeToEdit.ingredients ? recipeToEdit.ingredients.join(', ') : '');
   const [instructions, setInstructions] = useState(recipeToEdit ? recipeToEdit.instructions : '');
   const [imageUri, setImageUri] = useState(recipeToEdit ? recipeToEdit.image : null);
   const [isPublic, setIsPublic] = useState(recipeToEdit ? recipeToEdit.isPublic : false);
   const [focusedInput, setFocusedInput] = useState(null);
+
+  React.useEffect(() => {
+    if (recipeToEdit) {
+      setName(recipeToEdit.name || '');
+      setPrepTime(recipeToEdit.prepTime !== 'N/A' ? recipeToEdit.prepTime : '');
+      setServings(recipeToEdit.servings !== 'N/A' ? recipeToEdit.servings : '');
+      setCalories(recipeToEdit.calories !== 'N/A' ? recipeToEdit.calories : '');
+      setDifficulty(recipeToEdit.difficulty !== 'N/A' ? recipeToEdit.difficulty : '');
+      setIngredients(recipeToEdit.ingredients ? recipeToEdit.ingredients.join(', ') : '');
+      setInstructions(recipeToEdit.instructions || '');
+      setImageUri(recipeToEdit.image || null);
+      setIsPublic(recipeToEdit.isPublic || false);
+      
+      navigation.setOptions({
+        title: 'Edit Recipe'
+      });
+    } else {
+      setName('');
+      setPrepTime('');
+      setServings('');
+      setCalories('');
+      setDifficulty('');
+      setIngredients('');
+      setInstructions('');
+      setImageUri(null);
+      setIsPublic(false);
+
+      navigation.setOptions({
+        title: 'Add Recipe'
+      });
+    }
+  }, [recipeToEdit, navigation]);
+
+  const handleCancel = () => {
+    Alert.alert(
+      "Discard Changes?",
+      "Are you sure you want to discard your edits? Any unsaved changes will be lost.",
+      [
+        { text: "Keep Editing", style: "cancel" },
+        { 
+          text: "Discard", 
+          style: "destructive", 
+          onPress: () => {
+            navigation.navigate('My Recipes');
+            navigation.setParams({ recipe: undefined }); 
+          }
+        }
+      ]
+    );
+  };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -37,7 +88,7 @@ export default function AddRecipe({ route, navigation }) {
 
   const handleSave = () => {
     if (!name || !ingredients || !instructions) {
-      alert("Please fill out all fields.");
+      Alert.alert("Missing Fields", "Please fill out all fields.");
       return;
     }
     
@@ -62,6 +113,7 @@ export default function AddRecipe({ route, navigation }) {
     }
     
     if (recipeToEdit) {
+      navigation.setParams({ recipe: undefined }); // Clear edit mode
       navigation.goBack();
     } else {
       navigation.navigate('My Recipes');
@@ -80,7 +132,15 @@ export default function AddRecipe({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
+        <View style={styles.headerSpacer} />
         <Text style={styles.title}>{recipeToEdit ? 'Edit' : 'Add'} <Text style={styles.highlight}>Recipe</Text></Text>
+        {recipeToEdit ? (
+          <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
       
       <KeyboardAvoidingView 
@@ -97,7 +157,7 @@ export default function AddRecipe({ route, navigation }) {
           <TouchableOpacity style={styles.imageUpload} onPress={pickImage} activeOpacity={0.8}>
             {imageUri && imageUri !== 'placeholder_url' ? (
               <>
-                <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                <Image source={typeof imageUri === 'string' ? { uri: imageUri } : imageUri} style={styles.previewImage} contentFit="cover" cachePolicy="disk" />
                 <View style={styles.imageOverlay}>
                   <Ionicons name="camera" size={32} color="rgba(255,255,255,0.8)" />
                 </View>
@@ -230,6 +290,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa' 
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
@@ -239,6 +302,19 @@ const styles = StyleSheet.create({
     fontWeight: '800', 
     color: '#333',
     textAlign: 'center',
+  },
+  headerButton: {
+    padding: 8,
+    width: 70, // fixed width to balance header
+    alignItems: 'flex-end',
+  },
+  headerSpacer: {
+    width: 70,
+  },
+  cancelText: {
+    color: '#d62828',
+    fontSize: 16,
+    fontWeight: '600',
   },
   highlight: {
     color: '#fca311',

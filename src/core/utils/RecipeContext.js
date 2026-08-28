@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import { recipeService } from '../../services/firebase/recipeService';
 import { useAuth } from '../../features/auth/AuthContext';
 import { cacheImageLocally } from './cacheUtils';
@@ -12,6 +13,7 @@ const DEFAULT_RECIPES = [
     name: 'Spaghetti Bolognese',
     category: 'Pasta',
     prepTime: '45 Mins',
+    servings: '4',
     calories: '600 Cal',
     difficulty: 'Easy',
     image: require('../../../assets/images/fallbacks/dummy1.jpg'),
@@ -24,6 +26,7 @@ const DEFAULT_RECIPES = [
     name: 'Grilled Salmon',
     category: 'Seafood',
     prepTime: '25 Mins',
+    servings: '2',
     calories: '450 Cal',
     difficulty: 'Medium',
     image: require('../../../assets/images/fallbacks/dummy2.jpg'),
@@ -36,6 +39,7 @@ const DEFAULT_RECIPES = [
     name: 'Chicken Tikka Masala',
     category: 'Chicken',
     prepTime: '60 Mins',
+    servings: '4',
     calories: '550 Cal',
     difficulty: 'Medium',
     image: require('../../../assets/images/fallbacks/dummy3.jpg'),
@@ -48,6 +52,7 @@ const DEFAULT_RECIPES = [
     name: 'Vegetable Stir Fry',
     category: 'Vegetarian',
     prepTime: '15 Mins',
+    servings: '2',
     calories: '250 Cal',
     difficulty: 'Easy',
     image: require('../../../assets/images/fallbacks/dummy4.jpg'),
@@ -62,6 +67,16 @@ export const RecipeProvider = ({ children }) => {
   const [recipes, setRecipes] = useState([]); // Global recipes
   const [myRecipes, setMyRecipes] = useState([]); // User's private/created recipes
   const [favorites, setFavorites] = useState([]); // Offline Saved recipes
+  const [loading, setLoading] = useState(true); // Loading state for initial fetch
+
+  const sanitizeRecipeImage = (recipe) => {
+    // If it's a string, or it's a default built-in recipe, keep it as is
+    if (typeof recipe.image === 'string' || recipe.id?.toString().startsWith('default-')) {
+      return recipe;
+    }
+    // Otherwise, it's a corrupted local require() number fetched from DB, replace with fallback
+    return { ...recipe, image: require('../../../assets/images/fallbacks/default_recipe.jpg') };
+  };
 
   // Fetch data when user logs in or app starts
   useEffect(() => {
@@ -69,7 +84,10 @@ export const RecipeProvider = ({ children }) => {
       // 1. Fetch Global Recipes from Cloud
       const globalData = await recipeService.getGlobalRecipes();
       if (globalData && globalData.length > 0) {
-        setRecipes(globalData);
+        const otherUsersRecipes = globalData
+           .filter(r => r.userId !== user?.uid)
+           .map(sanitizeRecipeImage);
+        setRecipes([...DEFAULT_RECIPES, ...otherUsersRecipes]);
       } else {
         setRecipes(DEFAULT_RECIPES);
       }
@@ -77,14 +95,16 @@ export const RecipeProvider = ({ children }) => {
       // 2. Fetch User Recipes (if logged in)
       if (user) {
         const userData = await recipeService.getUserRecipes(user.uid);
-        setMyRecipes(userData);
+        setMyRecipes(userData.map(sanitizeRecipeImage));
       }
 
       // 3. Load Offline Favorites from Phone's Local Storage
       const savedFavs = await AsyncStorage.getItem('offline_favorites');
       if (savedFavs) {
-        setFavorites(JSON.parse(savedFavs));
+        const parsed = JSON.parse(savedFavs);
+        setFavorites(parsed.map(sanitizeRecipeImage));
       }
+      setLoading(false);
     };
 
     loadData();
@@ -114,44 +134,54 @@ export const RecipeProvider = ({ children }) => {
   // Add a newly created or AI-generated recipe
   const addMyRecipe = async (recipeData) => {
     try {
+      // Remove any local ID so it doesn't conflict with Firebase
+      const { id, ...dataToUpload } = recipeData;
+
       // Save to Firebase (it handles offline queuing automatically!)
       const newId = await recipeService.addRecipe({
-        ...recipeData,
+        ...dataToUpload,
         userId: user.uid,
+        creatorName: user.displayName || user.email?.split('@')[0] || 'Foodie',
         isPublic: recipeData.isPublic || false // Default to private
       });
 
-      const newRecipe = { id: newId, ...recipeData, userId: user.uid };
+      const newRecipe = { ...dataToUpload, id: newId, userId: user.uid, creatorName: user.displayName || user.email?.split('@')[0] || 'Foodie' };
       setMyRecipes((prev) => [...prev, newRecipe]);
       
-      // If they chose to make it public, add it to the global feed too
-      if (recipeData.isPublic) {
-         setRecipes((prev) => [...prev, newRecipe]);
-      }
+      // If they chose to make it public, add it to the global feed too (Actually, user asked NOT to show own recipes in global feed, so we shouldn't add it to setRecipes)
+      // We removed it from global feed per user request.
     } catch (error) {
       console.error(error);
+      Alert.alert("Error", "Failed to save recipe. Please try again.");
     }
   };
 
   const deleteMyRecipe = async (id) => {
+    // 1. Save previous state for rollback
+    const prevMyRecipes = [...myRecipes];
+    const prevRecipes = [...recipes];
+    const prevFavorites = [...favorites];
+
+    // 2. Optimistic UI update
+    setMyRecipes((prev) => prev.filter((r) => r.id !== id));
+    setRecipes((prev) => prev.filter((r) => r.id !== id));
+    setFavorites((prev) => {
+      const updatedFavs = prev.filter((r) => r.id !== id);
+      AsyncStorage.setItem('offline_favorites', JSON.stringify(updatedFavs));
+      return updatedFavs;
+    });
+
     try {
-      // Delete from Firestore
+      // 3. Network call
       await recipeService.deleteRecipe(id);
-      
-      // Delete locally from MyRecipes
-      setMyRecipes((prev) => prev.filter((r) => r.id !== id));
-      
-      // Delete locally from Global feed if it was public
-      setRecipes((prev) => prev.filter((r) => r.id !== id));
-      
-      // Optionally remove from offline favorites if it exists there
-      setFavorites((prev) => {
-        const updatedFavs = prev.filter((r) => r.id !== id);
-        AsyncStorage.setItem('offline_favorites', JSON.stringify(updatedFavs));
-        return updatedFavs;
-      });
     } catch (error) {
       console.error("Error deleting recipe from context:", error);
+      Alert.alert("Error", "Failed to delete recipe. Reverting changes.");
+      // 4. Rollback
+      setMyRecipes(prevMyRecipes);
+      setRecipes(prevRecipes);
+      setFavorites(prevFavorites);
+      AsyncStorage.setItem('offline_favorites', JSON.stringify(prevFavorites));
     }
   };
 
@@ -175,11 +205,12 @@ export const RecipeProvider = ({ children }) => {
       });
     } catch (error) {
       console.error(error);
+      Alert.alert("Error", "Failed to update recipe. Please try again.");
     }
   };
 
   return (
-    <RecipeContext.Provider value={{ recipes, favorites, toggleFavorite, myRecipes, addMyRecipe, deleteMyRecipe, editRecipe }}>
+    <RecipeContext.Provider value={{ recipes, favorites, toggleFavorite, myRecipes, addMyRecipe, deleteMyRecipe, editRecipe, loading }}>
       {children}
     </RecipeContext.Provider>
   );

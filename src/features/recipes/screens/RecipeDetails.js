@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -14,7 +15,7 @@ export default function RecipeDetails({ route, navigation }) {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         <View style={styles.imageContainer}>
-          <Image source={{ uri: recipe.image }} style={styles.image} />
+          <Image source={typeof recipe.image === 'string' ? { uri: recipe.image } : recipe.image} style={styles.image} contentFit="cover" cachePolicy="disk" />
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>

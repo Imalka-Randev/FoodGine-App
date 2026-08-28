@@ -1,5 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// SECURITY NOTE: Storing the API key on the client is insecure for a production app 
+// because it can be extracted from the JavaScript bundle. 
+// For a production app, the Gemini API should be called from a backend server (e.g., Firebase Cloud Functions).
+// However, since this is a Coursera learning project and a backend is unavailable (requires a paid plan),
+// we are intentionally keeping it here for simplicity.
 const genAI = new GoogleGenerativeAI(process.env.EXPO_PUBLIC_GEMINI_API_KEY);
 
 const SYSTEM_INSTRUCTION = `
@@ -32,6 +37,14 @@ The JSON block must be enclosed in \`\`\`json and \`\`\` and match this EXACT st
 Do not output the JSON block unless you are actually giving them a recipe to be pinned/saved.
 `;
 
+const sanitizeInput = (text) => {
+  if (!text) return text;
+  // Strip HTML tags to prevent injection
+  const stripped = text.replace(/<[^>]*>?/gm, '');
+  // Limit to 500 characters
+  return stripped.substring(0, 500);
+};
+
 export const aiService = {
   sendMessage: async (history, userPrompt, audioBase64 = null) => {
     try {
@@ -50,11 +63,11 @@ export const aiService = {
         ]
       });
 
-      let messagePayload = userPrompt;
+      let messagePayload = sanitizeInput(userPrompt);
       if (audioBase64) {
         messagePayload = [
           { inlineData: { data: audioBase64, mimeType: "audio/m4a" } },
-          { text: userPrompt || "Respond to this audio in character." }
+          { text: sanitizeInput(userPrompt) || "Respond to this audio in character." }
         ];
       }
 

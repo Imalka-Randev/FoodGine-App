@@ -1,15 +1,12 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Alert, KeyboardAvoidingView, Platform, Modal, FlatList, LayoutAnimation, UIManager, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { aiService } from '../../../services/ai/aiService';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
-import { ChatContext } from '../../../core/utils/ChatContext';
-import * as Network from 'expo-network';
-import { useAudioRecorder, requestRecordingPermissionsAsync, RecordingPresets, setAudioModeAsync } from 'expo-audio';
-import * as Speech from 'expo-speech';
-import * as FileSystem from 'expo-file-system/legacy';
+import { aiService } from '../../../services/ai/aiService';
 import { useHideOnScroll, TabContext } from '../../../core/utils/TabContext';
+import useFoodbyChat from '../hooks/useFoodbyChat';
+import useVoiceRecording from '../hooks/useVoiceRecording';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -17,21 +14,39 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function FoodbyScreen({ navigation }) {
-  const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [activeChatId, setActiveChatId] = useState(null);
-  const [isOffline, setIsOffline] = useState(false);
-  const [isRecipeExpanded, setIsRecipeExpanded] = useState(false);
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const [isRecording, setIsRecording] = useState(false);
-  const scrollViewRef = useRef();
+  const { addMyRecipe, myRecipes } = useContext(RecipeContext);
   const { handleScroll, tabBarOffset } = useHideOnScroll();
   const { hideTabBar, showTabBar } = useContext(TabContext) || {};
   const insets = useSafeAreaInsets();
 
-  const { addMyRecipe, myRecipes } = useContext(RecipeContext);
-  const { chats, createChat, addMessageToChat, renameChat, deleteChat, setActiveRecipeForChat } = useContext(ChatContext);
+  const {
+    prompt,
+    setPrompt,
+    loading,
+    isOffline,
+    activeChatId,
+    setActiveChatId,
+    isRecipeExpanded,
+    setIsRecipeExpanded,
+    showSidebar,
+    setShowSidebar,
+    scrollViewRef,
+    messages,
+    activeRecipe,
+    chats,
+    toggleRecipeExpansion,
+    handleNewChat,
+    showChatOptions,
+    handleAskFoodby,
+    handleEditRetry
+  } = useFoodbyChat();
+
+  const { isRecording, startRecording, stopRecording } = useVoiceRecording(isOffline, (base64Audio) => {
+    handleAskFoodby(null, false, base64Audio);
+  });
+
+  // Check if current active recipe is already saved
+  const isRecipeSaved = activeRecipe && myRecipes.some(r => r.name === activeRecipe.name);
 
   useEffect(() => {
     if (isRecipeExpanded) {
@@ -41,203 +56,6 @@ export default function FoodbyScreen({ navigation }) {
     }
   }, [isRecipeExpanded]);
 
-  useEffect(() => {
-    checkNetwork();
-    if (chats.length > 0 && !activeChatId) {
-      setActiveChatId(chats[0].id);
-    }
-  }, [chats]);
-
-  const checkNetwork = async () => {
-    const networkState = await Network.getNetworkStateAsync();
-    setIsOffline(!networkState.isConnected);
-  };
-
-  const activeChat = chats.find(c => c.id === activeChatId);
-  const messages = activeChat ? activeChat.messages : [];
-  const activeRecipe = activeChat ? activeChat.activeRecipe : null;
-
-  // Check if current active recipe is already saved
-  const isRecipeSaved = activeRecipe && myRecipes.some(r => r.name === activeRecipe.name);
-
-  const toggleRecipeExpansion = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsRecipeExpanded(!isRecipeExpanded);
-  };
-
-  const handleNewChat = async () => {
-    if (isOffline) {
-      Alert.alert("Offline", "You need internet to start a new chat.");
-      return;
-    }
-    const newChat = await createChat();
-    setActiveChatId(newChat.id);
-    setIsRecipeExpanded(false);
-    setShowSidebar(false);
-  };
-
-  const showChatOptions = (id, currentTitle) => {
-    Alert.alert(
-      "Chat Options",
-      "What would you like to do?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Rename", 
-          onPress: () => {
-            Alert.prompt(
-              "Rename Chat",
-              "Enter a new name for this conversation:",
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Save", onPress: (newName) => {
-                  if (newName && newName.trim()) renameChat(id, newName.trim());
-                }}
-              ],
-              "plain-text",
-              currentTitle
-            );
-          }
-        },
-        { 
-          text: "Delete", 
-          style: "destructive",
-          onPress: async () => {
-            await deleteChat(id);
-            if (activeChatId === id) {
-              const remaining = chats.filter(c => c.id !== id);
-              setActiveChatId(remaining.length > 0 ? remaining[0].id : null);
-              setIsRecipeExpanded(false);
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleAskFoodby = async (textToSubmit = prompt, isRetry = false, audioBase64 = null) => {
-    const text = textToSubmit ? textToSubmit.trim() : (audioBase64 ? "🎙️ Voice Message" : "");
-    if (!text && !audioBase64) return;
-    if (isOffline) {
-      Alert.alert("Offline", "You need internet to chat with Foodby.");
-      return;
-    }
-    
-    let currentChatId = activeChatId;
-    if (!currentChatId) {
-      const newChat = await createChat();
-      currentChatId = newChat.id;
-      setActiveChatId(currentChatId);
-    }
-
-    if (!isRetry) {
-      const userMessage = { role: 'user', text: text, isAudio: !!audioBase64 };
-      await addMessageToChat(currentChatId, userMessage);
-    }
-    
-    const chatToUpdate = chats.find(c => c.id === currentChatId);
-    if (chatToUpdate && chatToUpdate.title === 'New Chat') {
-      renameChat(currentChatId, text.slice(0, 20) + '...');
-    }
-
-    if (!isRetry) {
-      setPrompt('');
-    }
-    setLoading(true);
-
-    try {
-      const activeC = chats.find(c => c.id === currentChatId);
-      const chatHistory = activeC ? activeC.messages : [];
-      
-      const responseText = await aiService.sendMessage(
-        chatHistory, 
-        audioBase64 ? null : text, 
-        audioBase64
-      );
-      
-      const parsedRecipe = aiService.parseRecipeFromText(responseText);
-      const cleanMessage = aiService.cleanMessageText(responseText);
-      
-      // If voice message was sent, speak the response
-      if (audioBase64) {
-        Speech.speak(cleanMessage, { language: 'en', rate: 0.9, pitch: 1.0 });
-      }
-      
-      if (parsedRecipe) {
-        await setActiveRecipeForChat(currentChatId, parsedRecipe);
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setIsRecipeExpanded(true);
-        
-        await addMessageToChat(currentChatId, { role: 'ai', text: cleanMessage, hasRecipeUpdate: true });
-      } else {
-        await addMessageToChat(currentChatId, { role: 'ai', text: cleanMessage });
-      }
-      
-    } catch (error) {
-      Alert.alert("Oops!", error.message);
-    } finally {
-      setLoading(false);
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      if (isOffline) {
-        Alert.alert("Offline", "You need internet to use voice chat.");
-        return;
-      }
-      const perm = await requestRecordingPermissionsAsync();
-      if (perm.status !== 'granted') {
-        Alert.alert("Permission Required", "Please allow microphone access to use voice chat.");
-        return;
-      }
-      
-      // Stop any current speech
-      Speech.stop();
-
-      await setAudioModeAsync({
-        allowsRecording: true,
-        playsInSilentMode: true
-      });
-
-      await audioRecorder.prepareToRecordAsync();
-      audioRecorder.record();
-      setIsRecording(true);
-    } catch (err) {
-      console.error('Failed to start recording', err);
-      Alert.alert("Error", "Could not start recording.");
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
-      setIsRecording(false);
-      audioRecorder.stop();
-      
-      // Give it a tiny delay to finish writing the file
-      setTimeout(async () => {
-        const uri = audioRecorder.uri;
-        if (!uri) return;
-
-        // Read audio as base64
-        const base64Audio = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        // Send to AI
-        handleAskFoodby(null, false, base64Audio);
-      }, 300);
-
-    } catch (err) {
-      console.error('Failed to stop recording', err);
-    }
-  };
-
-  const handleEditRetry = (msgText) => {
-    setPrompt(msgText);
-    Alert.alert("Edit", "Message copied to input field. You can edit and send it again.");
-  };
 
   const handleSaveRecipe = (aiRecipe) => {
     if (!aiRecipe || isRecipeSaved) return;

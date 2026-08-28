@@ -69,5 +69,5 @@ export const useHideOnScroll = () => {
   // If tabBarOffset is undefined (e.g. provider missing), return a fallback Animated.Value so it doesn't crash screens that expect it.
   const fallbackOffset = useRef(new Animated.Value(0)).current;
 
-  return { handleScroll, tabBarOffset: tabBarOffset || fallbackOffset };
+  return { handleScroll, showTabBar, hideTabBar, tabBarOffset: tabBarOffset || fallbackOffset };
 };

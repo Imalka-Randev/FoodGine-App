@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableWithoutFeedback, Image, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, Dimensions, TouchableWithoutFeedback, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { Image } from 'expo-image';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -18,18 +19,18 @@ const features = [
 export default function FeatureCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const handleIndexChange = useCallback((newIndexOrUpdater) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setActiveIndex(newIndexOrUpdater);
+  }, []);
+
   // Auto-rotate every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       handleIndexChange((current) => (current + 1) % features.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
-
-  const handleIndexChange = (newIndexOrUpdater) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setActiveIndex(newIndexOrUpdater);
-  };
+  }, [handleIndexChange]);
 
   const getCardStyle = (index) => {
     const diff = (index - activeIndex + features.length) % features.length;
@@ -108,7 +109,7 @@ export default function FeatureCarousel() {
               >
                 {isActive ? (
                   <View style={styles.activeCardContent}>
-                    <Image source={item.image} style={styles.cardImage} />
+                    <Image source={item.image} style={styles.cardImage} contentFit="cover" cachePolicy="disk" />
                     <View style={styles.textOverlay}>
                       <Text style={styles.title}>{item.title}</Text>
                       <Text style={styles.desc}>{item.desc}</Text>

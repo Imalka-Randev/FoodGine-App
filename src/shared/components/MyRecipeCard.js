@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function MyRecipeCard({ recipe, onPress, onEdit, onDelete }) {
@@ -14,7 +15,7 @@ export default function MyRecipeCard({ recipe, onPress, onEdit, onDelete }) {
     >
       {/* Top Image Section */}
       <View style={styles.imageContainer}>
-        <Image source={imageSource} style={styles.cardImage} />
+        <Image source={imageSource} style={styles.cardImage} contentFit="cover" cachePolicy="disk" />
         
         {/* Floating Action Buttons */}
         <View style={styles.floatingActions}>
@@ -53,7 +54,24 @@ export default function MyRecipeCard({ recipe, onPress, onEdit, onDelete }) {
       {/* Bottom Info Section (Beige) */}
       <View style={styles.infoSection}>
         <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">{recipe.name}</Text>
-        <Text style={styles.cardCategory}>{recipe.category}</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Ionicons name="time-outline" size={14} color="#faf7f7ff" />
+            <Text style={styles.statText}>{recipe.prepTime || 'N/A'}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="people-outline" size={14} color="#faf7f7ff" />
+            <Text style={styles.statText}>{recipe.servings || 'N/A'}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="flame-outline" size={14} color="#faf7f7ff" />
+            <Text style={styles.statText}>{recipe.calories ? recipe.calories.replace(' Cal', '') : 'N/A'}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="stats-chart-outline" size={14} color="#faf7f7ff" />
+            <Text style={styles.statText}>{recipe.difficulty || 'N/A'}</Text>
+          </View>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -75,7 +93,6 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   floatingActions: {
     position: 'absolute',
@@ -113,8 +130,21 @@ const styles = StyleSheet.create({
     color: '#111',
     marginBottom: 4,
   },
-  cardCategory: {
-    fontSize: 16,
+  statsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 2,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statText: {
+    fontSize: 12,
     color: '#faf7f7ff',
+    marginLeft: 4,
+    fontWeight: '600',
   }
 });

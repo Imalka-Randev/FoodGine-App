@@ -102,7 +102,7 @@ export default function ProfileScreen({ navigation }) {
             ) : user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} style={styles.avatar} />
             ) : (
-              <Ionicons name="person-circle-outline" size={100} color="#fca311" />
+              <Image source={require('../../../../assets/images/fallbacks/default_avatar.jpg')} style={styles.avatar} />
             )}
           </TouchableOpacity>
           <Text style={styles.emailText}>{user?.displayName || user?.email}</Text>

@@ -2,7 +2,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 export const cacheImageLocally = async (imageUrl, recipeId) => {
   if (!imageUrl) return null;
-  
+  if (typeof imageUrl !== 'string') return imageUrl; // It's a local require()
+
   try {
     // Extract the file extension (e.g., .jpg, .png)
     const extension = imageUrl.split('.').pop().split('?')[0]; 

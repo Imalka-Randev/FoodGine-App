@@ -7,10 +7,19 @@ const CHAT_STORAGE_KEY = '@foodby_chats';
 
 export const ChatProvider = ({ children }) => {
   const [chats, setChats] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     loadChats();
   }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      AsyncStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chats)).catch(e => {
+        console.error("Failed to save chats to AsyncStorage", e);
+      });
+    }
+  }, [chats, isLoaded]);
 
   const loadChats = async () => {
     try {
@@ -20,22 +29,9 @@ export const ChatProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Failed to load chats from AsyncStorage", error);
+    } finally {
+      setIsLoaded(true);
     }
-  };
-
-  const updateStateAndStorage = (updaterFn) => {
-    return new Promise((resolve) => {
-      setChats(prevChats => {
-        const newChats = updaterFn(prevChats);
-        AsyncStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(newChats))
-          .then(() => resolve(newChats))
-          .catch(e => {
-             console.error("Failed to save to storage", e);
-             resolve(newChats);
-          });
-        return newChats;
-      });
-    });
   };
 
   const createChat = async () => {
@@ -47,15 +43,13 @@ export const ChatProvider = ({ children }) => {
       updatedAt: Date.now(),
     };
     
-    await updateStateAndStorage(prevChats => {
-      return [newChat, ...prevChats];
-    });
+    setChats(prevChats => [newChat, ...prevChats].slice(0, 20)); // Limit to 20 chats
     
     return newChat;
   };
 
   const addMessageToChat = async (chatId, message) => {
-    await updateStateAndStorage(prevChats => {
+    setChats(prevChats => {
       return prevChats.map(chat => {
         if (chat.id === chatId) {
           return {
@@ -70,7 +64,7 @@ export const ChatProvider = ({ children }) => {
   };
 
   const updateChatMessages = async (chatId, newMessages) => {
-    await updateStateAndStorage(prevChats => {
+    setChats(prevChats => {
       return prevChats.map(chat => {
         if (chat.id === chatId) {
           return {
@@ -85,7 +79,7 @@ export const ChatProvider = ({ children }) => {
   };
 
   const setActiveRecipeForChat = async (chatId, recipe) => {
-    await updateStateAndStorage(prevChats => {
+    setChats(prevChats => {
       return prevChats.map(chat => {
         if (chat.id === chatId) {
           return {
@@ -100,7 +94,7 @@ export const ChatProvider = ({ children }) => {
   };
 
   const renameChat = async (chatId, newTitle) => {
-    await updateStateAndStorage(prevChats => {
+    setChats(prevChats => {
       return prevChats.map(chat => {
         if (chat.id === chatId) {
           return { ...chat, title: newTitle, updatedAt: Date.now() };
@@ -111,7 +105,7 @@ export const ChatProvider = ({ children }) => {
   };
 
   const deleteChat = async (chatId) => {
-    await updateStateAndStorage(prevChats => {
+    setChats(prevChats => {
       return prevChats.filter(chat => chat.id !== chatId);
     });
   };

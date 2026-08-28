@@ -1,8 +1,11 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, FlatList, Dimensions, TextInput, Image, TouchableOpacity } from 'react-native';
+import React, { useContext, useState, useMemo, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, FlatList, Dimensions, TextInput, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RecipeCard from '../../../shared/components/RecipeCard';
+import SkeletonCard from '../../../shared/components/SkeletonCard';
 import CategoryItem from '../../../shared/components/CategoryItem';
 import FeatureCarousel from '../../../shared/components/FeatureCarousel';
 import { Ionicons } from '@expo/vector-icons'; // Added for the search icon
@@ -24,9 +27,16 @@ const { width } = Dimensions.get('window');
 
 export default function MainFeed({ navigation }) {
   const { user } = useAuth();
-  const { recipes } = useContext(RecipeContext);
+  const { recipes, loading } = useContext(RecipeContext);
+  const { handleScroll, showTabBar } = useHideOnScroll();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (showTabBar) showTabBar();
+    }, [showTabBar])
+  );
 
   const filteredRecipes = recipes.filter((r) => {
     const matchesCategory = selectedCategory === 'All' || r.category === selectedCategory;
@@ -34,27 +44,32 @@ export default function MainFeed({ navigation }) {
     return matchesCategory && matchesSearch;
   });
 
-  // Format recipes into rows of 2 for the FlatList
-  const formatData = (dataList, numColumns) => {
-    const formattedData = [];
-    for (let i = 0; i < dataList.length; i += numColumns) {
-      formattedData.push(dataList.slice(i, i + numColumns));
+  const listData = useMemo(() => {
+    // Format recipes into rows of 2 for the FlatList
+    const formatData = (dataList, numColumns) => {
+      const formattedData = [];
+      for (let i = 0; i < dataList.length; i += numColumns) {
+        formattedData.push(dataList.slice(i, i + numColumns));
+      }
+      return formattedData;
+    };
+
+    const recipeRows = formatData(filteredRecipes, 2);
+
+    const data = [
+      { type: 'header', id: 'header' },
+      { type: 'sticky_section', id: 'sticky_section' },
+      ...recipeRows.map((row, index) => ({ type: 'row', id: `row_${index}`, items: row }))
+    ];
+
+    if (loading) {
+      data.push({ type: 'loading', id: 'loading' });
+    } else if (filteredRecipes.length === 0) {
+      data.push({ type: 'empty', id: 'empty' });
     }
-    return formattedData;
-  };
-
-  const recipeRows = formatData(filteredRecipes, 2);
-
-  // Construct flat list data
-  const listData = [
-    { type: 'header', id: 'header' },
-    { type: 'sticky_section', id: 'sticky_section' },
-    ...recipeRows.map((row, index) => ({ type: 'row', id: `row_${index}`, items: row }))
-  ];
-
-  if (filteredRecipes.length === 0) {
-    listData.push({ type: 'empty', id: 'empty' });
-  }
+    
+    return data;
+  }, [filteredRecipes]);
 
   const renderItem = ({ item }) => {
     if (item.type === 'header') {
@@ -69,9 +84,9 @@ export default function MainFeed({ navigation }) {
             </View>
             <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
               {user?.photoURL ? (
-                <Image source={{ uri: user.photoURL }} style={styles.headerAvatar} />
+                <Image source={{ uri: user.photoURL }} style={styles.headerAvatar} contentFit="cover" cachePolicy="disk" />
               ) : (
-                <Ionicons name="person-circle-outline" size={50} color="#fca311" />
+                <Image source={require('../../../../assets/images/fallbacks/default_avatar.jpg')} style={styles.headerAvatar} />
               )}
             </TouchableOpacity>
           </View>
@@ -138,10 +153,24 @@ export default function MainFeed({ navigation }) {
       );
     }
 
+    if (item.type === 'loading') {
+      return (
+        <View style={styles.listContainer}>
+          <View style={styles.row}>
+            <SkeletonCard style={styles.cardHalfWidth} />
+            <SkeletonCard style={styles.cardHalfWidth} />
+          </View>
+          <View style={styles.row}>
+            <SkeletonCard style={styles.cardHalfWidth} />
+            <SkeletonCard style={styles.cardHalfWidth} />
+          </View>
+        </View>
+      );
+    }
+
     return null;
   };
 
-  const { handleScroll } = useHideOnScroll();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -154,6 +183,10 @@ export default function MainFeed({ navigation }) {
         contentContainerStyle={styles.flatListContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        initialNumToRender={5}
+        windowSize={5}
+        maxToRenderPerBatch={5}
+        removeClippedSubviews={true}
       />
     </SafeAreaView>
   );

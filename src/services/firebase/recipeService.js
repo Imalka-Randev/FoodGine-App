@@ -9,7 +9,7 @@ export const recipeService = {
     try {
       const q = query(recipesCollection, where("isPublic", "==", true));
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
     } catch (error) {
       console.error("Error fetching global recipes:", error);
       return []; // Return empty array if offline and not cached yet
@@ -21,7 +21,7 @@ export const recipeService = {
     try {
       const q = query(recipesCollection, where("userId", "==", userId));
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
     } catch (error) {
       console.error("Error fetching user recipes:", error);
       return [];

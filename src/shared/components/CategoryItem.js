@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 
 export default function CategoryItem({ category, isSelected, onPress }) {
   return (
@@ -8,7 +9,7 @@ export default function CategoryItem({ category, isSelected, onPress }) {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Image source={category.image} style={styles.image} />
+      <Image source={category.image} style={styles.image} contentFit="cover" cachePolicy="disk" />
       <Text style={[styles.text, isSelected && styles.textSelected]}>
         {category.name}
       </Text>

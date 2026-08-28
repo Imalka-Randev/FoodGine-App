@@ -1,13 +1,36 @@
-import React, { useContext } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useContext, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RecipeCard from '../../../shared/components/RecipeCard';
 import { useHideOnScroll } from '../../../core/utils/TabContext';
 
 export default function Favorites({ navigation }) {
-  const { favorites } = useContext(RecipeContext);
-  const { handleScroll } = useHideOnScroll();
+  const { favorites, toggleFavorite } = useContext(RecipeContext);
+  const { handleScroll, showTabBar } = useHideOnScroll();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (showTabBar) showTabBar();
+    }, [showTabBar])
+  );
+
+  const handleRemove = (recipe) => {
+    Alert.alert(
+      "Remove Favorite",
+      `Are you sure you want to remove "${recipe.name}" from favorites?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Remove", 
+          style: "destructive", 
+          onPress: () => toggleFavorite(recipe) 
+        }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -29,7 +52,11 @@ export default function Favorites({ navigation }) {
           renderItem={({ item }) => (
             <RecipeCard 
               recipe={item} 
-              onPress={() => navigation.navigate('RecipeDetails', { recipe: item })} 
+              onPress={() => navigation.navigate('RecipeDetails', { recipe: item })}
+              onHeartPress={() => handleRemove(item)}
+              isFavorite={true}
+              showStats={true}
+              imageContainerStyle={{ height: 220 }}
             />
           )}
         />
@@ -75,5 +102,5 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 80,
-  }
+  },
 });

@@ -1,14 +1,40 @@
-import React, { useContext } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import React, { useContext, useState, useMemo, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { RecipeContext } from '../../../core/utils/RecipeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHideOnScroll } from '../../../core/utils/TabContext';
 
 import MyRecipeCard from '../../../shared/components/MyRecipeCard';
+import SkeletonCard from '../../../shared/components/SkeletonCard';
 
 export default function MyRecipes({ navigation }) {
-  const { myRecipes, deleteMyRecipe } = useContext(RecipeContext);
-  const { handleScroll } = useHideOnScroll();
+  const { myRecipes, deleteMyRecipe, loading } = useContext(RecipeContext);
+  const { handleScroll, showTabBar } = useHideOnScroll();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (showTabBar) showTabBar();
+    }, [showTabBar])
+  );
+
+  const filteredRecipes = useMemo(() => {
+    if (!searchQuery) return myRecipes;
+    return myRecipes.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [myRecipes, searchQuery]);
+
+  const confirmDelete = (id, name) => {
+    Alert.alert(
+      "Delete Recipe",
+      `Are you sure you want to delete "${name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => deleteMyRecipe(id) }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -16,14 +42,31 @@ export default function MyRecipes({ navigation }) {
         <Text style={styles.title}>My <Text style={styles.highlight}>Recipes</Text></Text>
       </View>
 
-      {myRecipes.length === 0 ? (
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search my recipes..."
+          placeholderTextColor="#888"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      {loading ? (
+        <View style={styles.listContent}>
+          <SkeletonCard height={150} />
+          <SkeletonCard height={150} />
+          <SkeletonCard height={150} />
+        </View>
+      ) : filteredRecipes.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No recipes added yet.</Text>
-          <Text style={styles.emptySubtext}>Create your own custom recipes!</Text>
+          <Text style={styles.emptyText}>{searchQuery ? "No recipes found." : "No recipes added yet."}</Text>
+          {!searchQuery && <Text style={styles.emptySubtext}>Create your own custom recipes!</Text>}
         </View>
       ) : (
         <FlatList
-          data={myRecipes}
+          data={filteredRecipes}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
@@ -34,7 +77,7 @@ export default function MyRecipes({ navigation }) {
               recipe={item}
               onPress={() => navigation.navigate('RecipeDetails', { recipe: item })}
               onEdit={() => navigation.navigate('Add Recipe', { recipe: item })}
-              onDelete={() => deleteMyRecipe(item.id)}
+              onDelete={() => confirmDelete(item.id, item.name)}
             />
           )}
         />
@@ -61,6 +104,31 @@ const styles = StyleSheet.create({
   },
   highlight: {
     color: '#fca311',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 28,
+    marginBottom: 15,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    height: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
   },
   emptyContainer: {
     flex: 1,
