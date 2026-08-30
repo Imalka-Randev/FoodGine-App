@@ -183,8 +183,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 2.5,
     elevation: 2,
   },
   infoLabel: {
@@ -215,8 +215,8 @@ const styles = StyleSheet.create({
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 2.5,
     elevation: 2,
   },
   ingredientRow: {
@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 2.5,
     elevation: 2,
   },
   instructionStepContainer: {
