@@ -12,7 +12,7 @@
     "@react-navigation/stack": "^7.10.6",
     "expo": "~56.0.12",
     "expo-audio": "~56.0.13",
-    "expo-blob": "^57.0.1",
+    "expo-blob": "~56.0.3",
     "expo-file-system": "~56.0.10",
     "expo-image": "~56.0.12",
     "expo-image-picker": "~56.0.24",
